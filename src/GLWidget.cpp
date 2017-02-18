@@ -1,14 +1,14 @@
 #include "GLWidget.h"
 
-QVector<QVector3D> drawThor(float r, float d) {
+QVector<QVector3D> drawThor(float r, float d, float da1, float da2) {
     QVector<QVector3D> q;
-    for (int a1 = 0; a1 < 360; ++a1) {
+    for (int a1 = 0; a1 < 360; a1+=5) {
         QMatrix4x4 m1;
-        m1.rotate(a1, 1, 0, 0);
-        for (int a2 = 0; a2 < 360; ++a2) {
+        m1.rotate(a1 + da1, 1, 0, 0);
+        for (int a2 = 0; a2 < 360; a2+=6) {
             QMatrix4x4 m2;
             m2.translate(QVector3D(0, r + d, 0));
-            m2.rotate(a2, 0, 0, 1);
+            m2.rotate(a2 + da2, 0, 0, 1);
             q.append(m1 * m2 * QVector3D(d, 0, 0));
         }
     }
@@ -126,7 +126,7 @@ void GLWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
     program->bind();
 
-    QVector<QVector3D> vertices = drawThor(3, 2);
+    QVector<QVector3D> vertices = drawThor(3, 2, .3f*++da1, 1.2f*++da2);
     QVector<QVector3D> axisz = drawAxis(QVector3D(0, 0, -5), QVector3D(0, 0, 10));
     QVector<QVector3D> axisy = drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0));
     QVector<QVector3D> axisx = drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0));
@@ -207,11 +207,12 @@ void main(){
 }
 
 GLWidget::GLWidget(QWidget* parent)
-        : QOpenGLWidget(parent), rot_x2(0), rot_y2(0) {
+        : QOpenGLWidget(parent), rot_x2(0), rot_y2(0), da1(0), da2(0) {
     setFocusPolicy(Qt::ClickFocus);
 
     refresh_mvp();
-
+    connect(&timer, SIGNAL(timeout()), this, SLOT(update()));
+    timer.start(50);
     setMouseTracking(true);
 }
 

@@ -4,6 +4,7 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QWheelEvent>
+#include <QTimer>
 
 
 class Camera{
@@ -49,6 +50,9 @@ private:
     float rot_y2;
     GLuint u_mvp;
     QPoint pos;
+    QTimer timer;
+    int da1;
+    int da2;
 
 protected:
     virtual void wheelEvent(QWheelEvent* event) override;
