@@ -44,11 +44,8 @@ private:
     QOpenGLShaderProgram* program;
     GLuint pos_attr;
     QMatrix4x4 mvp;
-    GLuint uv_attr;
-    GLuint texture;
     float rot_x2;
     float rot_y2;
-    GLuint tex_attr;
     GLuint u_mvp;
     QPoint pos;
 
