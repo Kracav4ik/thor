@@ -2,11 +2,28 @@
 
 QVector<QVector3D> drawThor(float r, float d) {
     QVector<QVector3D> q;
-    for (int i = 1; i < 51; ++i) {
-        q.append(QVector3D(i/50.f, i/50.f, .02f*i));
+    QMatrix4x4 m;
+    for (int _ = 1; _ < 361; ++_) {
+        m.rotate(1, 1, 0, 0);
+        for (int i = 1; i < 361; ++i) {
+            m.translate(QVector3D(1, 0, 0));
+            m.rotate(1, 0, 0, 1);
+            QVector3D vector3D = QVector3D(1, 1, 0) * r;
+            q.append(m * vector3D * d);
+        }
     }
     return q;
 }
+
+QVector<QVector3D> drawAxis(QVector3D a, QVector3D b) {
+    QVector<QVector3D> q;
+    for (float _ = 1; _ < 101; ++_) {
+        q.append(a * _ / 100 + (1 - _ / 100) * b);
+    }
+
+    return q;
+}
+
 
 void Camera::zoom_in() {
     scale *= 1.2f;
@@ -109,15 +126,50 @@ void GLWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
     program->bind();
 
-    QVector<QVector3D> vertices = drawThor(0,0);
+    QVector<QVector3D> vertices = drawThor(40, .05);
+    QVector<QVector3D> axisz = drawAxis(QVector3D(0, 0, -50), QVector3D(0, 0, 100));
+    QVector<QVector3D> axisy = drawAxis(QVector3D(0, -50, 0), QVector3D(0, 100, 0));
+    QVector<QVector3D> axisx = drawAxis(QVector3D(-50, 0, 0), QVector3D(100, 0, 0));
 
     glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, vertices.data());
 
     program->setUniformValue(u_mvp, mvp);
 
+    program->setUniformValue(u_color, QColor(255, 255, 0, 255));
+
     glEnableVertexAttribArray(pos_attr);
 
     glDrawArrays(GL_POINTS, 0, vertices.length());
+
+    glDisableVertexAttribArray(pos_attr);
+
+    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisx.data());
+
+    program->setUniformValue(u_color, QColor(255, 0, 0, 255));
+
+    glEnableVertexAttribArray(pos_attr);
+
+    glDrawArrays(GL_POINTS, 0, axisx.length());
+
+    glDisableVertexAttribArray(pos_attr);
+
+    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisy.data());
+
+    program->setUniformValue(u_color, QColor(0, 255, 0, 255));
+
+    glEnableVertexAttribArray(pos_attr);
+
+    glDrawArrays(GL_POINTS, 0, axisy.length());
+
+    glDisableVertexAttribArray(pos_attr);
+
+    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisz.data());
+
+    program->setUniformValue(u_color, QColor(0, 0, 255, 255));
+
+    glEnableVertexAttribArray(pos_attr);
+
+    glDrawArrays(GL_POINTS, 0, axisz.length());
 
     glDisableVertexAttribArray(pos_attr);
 
@@ -141,14 +193,17 @@ void main(){
 }
 )");
     program->addShaderFromSourceCode(QOpenGLShader::Fragment, R"(
+uniform vec4 color;
+
 void main(){
 //     Output color = color of the texture at the specified UV
-    gl_FragColor = vec4(1, 1, 0, 1);
+    gl_FragColor = color;
 }
 )");
     program->link();
     pos_attr = (GLuint) program->attributeLocation("a_position");
     u_mvp = (GLuint) program->uniformLocation("u_mvp");
+    u_color = (GLuint) program->uniformLocation("color");
 }
 
 GLWidget::GLWidget(QWidget* parent)
