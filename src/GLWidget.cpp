@@ -2,14 +2,14 @@
 
 QVector<QVector3D> drawThor(float r, float d) {
     QVector<QVector3D> q;
-    QMatrix4x4 m;
-    for (int _ = 1; _ < 361; ++_) {
-        m.rotate(1, 1, 0, 0);
-        for (int i = 1; i < 361; ++i) {
-            m.translate(QVector3D(1, 0, 0));
-            m.rotate(1, 0, 0, 1);
-            QVector3D vector3D = QVector3D(1, 1, 0) * r;
-            q.append(m * vector3D * d);
+    for (int a1 = 0; a1 < 360; ++a1) {
+        QMatrix4x4 m1;
+        m1.rotate(a1, 1, 0, 0);
+        for (int a2 = 0; a2 < 360; ++a2) {
+            QMatrix4x4 m2;
+            m2.translate(QVector3D(0, r + d, 0));
+            m2.rotate(a2, 0, 0, 1);
+            q.append(m1 * m2 * QVector3D(d, 0, 0));
         }
     }
     return q;
@@ -17,10 +17,10 @@ QVector<QVector3D> drawThor(float r, float d) {
 
 QVector<QVector3D> drawAxis(QVector3D a, QVector3D b) {
     QVector<QVector3D> q;
-    for (float _ = 1; _ < 101; ++_) {
-        q.append(a * _ / 100 + (1 - _ / 100) * b);
+    for (int i = 0; i <= 100; ++i) {
+        float k = i / 100.f;
+        q.append(a * k + (1 - k) * b);
     }
-
     return q;
 }
 
@@ -126,10 +126,10 @@ void GLWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
     program->bind();
 
-    QVector<QVector3D> vertices = drawThor(40, .05);
-    QVector<QVector3D> axisz = drawAxis(QVector3D(0, 0, -50), QVector3D(0, 0, 100));
-    QVector<QVector3D> axisy = drawAxis(QVector3D(0, -50, 0), QVector3D(0, 100, 0));
-    QVector<QVector3D> axisx = drawAxis(QVector3D(-50, 0, 0), QVector3D(100, 0, 0));
+    QVector<QVector3D> vertices = drawThor(3, 2);
+    QVector<QVector3D> axisz = drawAxis(QVector3D(0, 0, -5), QVector3D(0, 0, 10));
+    QVector<QVector3D> axisy = drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0));
+    QVector<QVector3D> axisx = drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0));
 
     glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, vertices.data());
 
