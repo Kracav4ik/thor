@@ -10,14 +10,14 @@ struct MeshPoint {
 
 QVector<MeshPoint> drawThor(float r, float d, float da1, float da2, const QColor& color) {
     QVector<MeshPoint> q;
-    for (int a1 = 0; a1 < 360; a1 += 1) {
+    for (int a1 = 0; a1 < 360; a1 += 5) {
         QMatrix4x4 m1;
         m1.rotate(a1 + da1, 1, 0, 0);
         for (int a2 = 0; a2 < 360; a2 += 6) {
             QMatrix4x4 m2;
             m2.translate(QVector3D(0, r + d, 0));
             m2.rotate(a2 + da2, 0, 0, 1);
-            q.append({m1 * m2 * QVector3D(d, 0, 0), color});
+            q.append({m1 * m2 * QVector3D(d, 0, 0), QColor::fromHsv((a1 + a2)%360, 255, 255)});
         }
     }
     return q;
@@ -134,7 +134,7 @@ void GLWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
     program->bind();
 
-    QVector<MeshPoint> vertices = drawThor(3, 2, .3f * ++da1, .2f * ++da2, QColor(255, 255, 0));
+    QVector<MeshPoint> vertices = drawThor(3, 2, 1.3f * ++da1, 1.2f * ++da2, QColor(255, 255, 0));
     vertices << drawAxis(QVector3D(0, 0, -5), QVector3D(0, 0, 10), QColor(255, 0, 0));
     vertices << drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0), QColor(0, 255, 0));
     vertices << drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0), QColor(0, 0, 255));
