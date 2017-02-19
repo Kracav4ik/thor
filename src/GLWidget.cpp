@@ -131,17 +131,20 @@ void GLWidget::paintGL() {
     QVector<QVector3D> axisy = drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0));
     QVector<QVector3D> axisx = drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0));
 
-    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, vertices.data());
-
     program->setUniformValue(u_mvp, mvp);
 
-    program->setUniformValue(u_color, QColor(255, 255, 0, 255));
+    static int i;
+    for (QVector3D vec: vertices) {
+        ++i;
+        i %= 256;
+        glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, &vec);
+        program->setUniformValue(u_color, QColor(255 - i, (i*i)%256, i, 255));
+        glEnableVertexAttribArray(pos_attr);
 
-    glEnableVertexAttribArray(pos_attr);
+        glDrawArrays(GL_POINTS, 0, 1);
 
-    glDrawArrays(GL_POINTS, 0, vertices.length());
-
-    glDisableVertexAttribArray(pos_attr);
+        glDisableVertexAttribArray(pos_attr);
+    }
 
     glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisx.data());
 
@@ -202,8 +205,8 @@ void main(){
 )");
     program->link();
     pos_attr = (GLuint) program->attributeLocation("a_position");
-    u_mvp = (GLuint) program->uniformLocation("u_mvp");
     u_color = (GLuint) program->uniformLocation("color");
+    u_mvp = (GLuint) program->uniformLocation("u_mvp");
 }
 
 GLWidget::GLWidget(QWidget* parent)
@@ -212,7 +215,7 @@ GLWidget::GLWidget(QWidget* parent)
 
     refresh_mvp();
     connect(&timer, SIGNAL(timeout()), this, SLOT(update()));
-    timer.start(50);
+    timer.start(100);
     setMouseTracking(true);
 }
 
