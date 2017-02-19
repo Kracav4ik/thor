@@ -44,8 +44,8 @@ private:
     Camera cam;
     QOpenGLShaderProgram* program;
     GLuint pos_attr;
+    GLuint col_attr;
     QMatrix4x4 mvp;
-    GLuint u_color;
     float rot_x2;
     float rot_y2;
     GLuint u_mvp;

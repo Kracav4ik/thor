@@ -1,25 +1,33 @@
 #include "GLWidget.h"
+#include "mesh.h"
 
-QVector<QVector3D> drawThor(float r, float d, float da1, float da2) {
-    QVector<QVector3D> q;
-    for (int a1 = 0; a1 < 360; a1+=5) {
+using namespace p3d;
+
+struct MeshPoint {
+    Vector3 pos;
+    Color color;
+};
+
+QVector<MeshPoint> drawThor(float r, float d, float da1, float da2, const QColor& color) {
+    QVector<MeshPoint> q;
+    for (int a1 = 0; a1 < 360; a1 += 1) {
         QMatrix4x4 m1;
         m1.rotate(a1 + da1, 1, 0, 0);
-        for (int a2 = 0; a2 < 360; a2+=6) {
+        for (int a2 = 0; a2 < 360; a2 += 6) {
             QMatrix4x4 m2;
             m2.translate(QVector3D(0, r + d, 0));
             m2.rotate(a2 + da2, 0, 0, 1);
-            q.append(m1 * m2 * QVector3D(d, 0, 0));
+            q.append({m1 * m2 * QVector3D(d, 0, 0), color});
         }
     }
     return q;
 }
 
-QVector<QVector3D> drawAxis(QVector3D a, QVector3D b) {
-    QVector<QVector3D> q;
+QVector<MeshPoint> drawAxis(QVector3D a, QVector3D b, const QColor& color) {
+    QVector<MeshPoint> q;
     for (int i = 0; i <= 100; ++i) {
         float k = i / 100.f;
-        q.append(a * k + (1 - k) * b);
+        q.append({a * k + (1 - k) * b, color});
     }
     return q;
 }
@@ -126,54 +134,22 @@ void GLWidget::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT);
     program->bind();
 
-    QVector<QVector3D> vertices = drawThor(3, 2, .3f*++da1, 1.2f*++da2);
-    QVector<QVector3D> axisz = drawAxis(QVector3D(0, 0, -5), QVector3D(0, 0, 10));
-    QVector<QVector3D> axisy = drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0));
-    QVector<QVector3D> axisx = drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0));
+    QVector<MeshPoint> vertices = drawThor(3, 2, .3f * ++da1, .2f * ++da2, QColor(255, 255, 0));
+    vertices << drawAxis(QVector3D(0, 0, -5), QVector3D(0, 0, 10), QColor(255, 0, 0));
+    vertices << drawAxis(QVector3D(0, -5, 0), QVector3D(0, 10, 0), QColor(0, 255, 0));
+    vertices << drawAxis(QVector3D(-5, 0, 0), QVector3D(10, 0, 0), QColor(0, 0, 255));
 
     program->setUniformValue(u_mvp, mvp);
 
-    static int i;
-    for (QVector3D vec: vertices) {
-        ++i;
-        i %= 256;
-        glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, &vec);
-        program->setUniformValue(u_color, QColor(255 - i, (i*i)%256, i, 255));
-        glEnableVertexAttribArray(pos_attr);
-
-        glDrawArrays(GL_POINTS, 0, 1);
-
-        glDisableVertexAttribArray(pos_attr);
-    }
-
-    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisx.data());
-
-    program->setUniformValue(u_color, QColor(255, 0, 0, 255));
+    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, sizeof(MeshPoint), &vertices.data()->pos);
+    glVertexAttribPointer(col_attr, 4, GL_FLOAT, GL_FALSE, sizeof(MeshPoint), &vertices.data()->color);
 
     glEnableVertexAttribArray(pos_attr);
+    glEnableVertexAttribArray(col_attr);
 
-    glDrawArrays(GL_POINTS, 0, axisx.length());
+    glDrawArrays(GL_POINTS, 0, vertices.length());
 
-    glDisableVertexAttribArray(pos_attr);
-
-    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisy.data());
-
-    program->setUniformValue(u_color, QColor(0, 255, 0, 255));
-
-    glEnableVertexAttribArray(pos_attr);
-
-    glDrawArrays(GL_POINTS, 0, axisy.length());
-
-    glDisableVertexAttribArray(pos_attr);
-
-    glVertexAttribPointer(pos_attr, 3, GL_FLOAT, GL_FALSE, 0, axisz.data());
-
-    program->setUniformValue(u_color, QColor(0, 0, 255, 255));
-
-    glEnableVertexAttribArray(pos_attr);
-
-    glDrawArrays(GL_POINTS, 0, axisz.length());
-
+    glDisableVertexAttribArray(col_attr);
     glDisableVertexAttribArray(pos_attr);
 
     program->release();
@@ -187,25 +163,27 @@ void GLWidget::initializeGL() {
 
     program = new QOpenGLShaderProgram(this);
     program->addShaderFromSourceCode(QOpenGLShader::Vertex, R"(
-// Input vertex data, different for all executions of this shader.
 attribute vec3 a_position;
+attribute vec4 a_color;
 uniform mat4 u_mvp;
 
+varying vec4 v_color;
+
 void main(){
+    v_color = a_color;
     gl_Position = u_mvp * vec4(a_position, 1);
 }
 )");
     program->addShaderFromSourceCode(QOpenGLShader::Fragment, R"(
-uniform vec4 color;
+varying vec4 v_color;
 
 void main(){
-//     Output color = color of the texture at the specified UV
-    gl_FragColor = color;
+    gl_FragColor = v_color;
 }
 )");
     program->link();
     pos_attr = (GLuint) program->attributeLocation("a_position");
-    u_color = (GLuint) program->uniformLocation("color");
+    col_attr = (GLuint) program->attributeLocation("a_color");
     u_mvp = (GLuint) program->uniformLocation("u_mvp");
 }
 

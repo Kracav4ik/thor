@@ -22,7 +22,7 @@ set(THOR_SOURCES
         MainWindow.cpp
         MainWindow.h
         GLWidget.cpp
-        GLWidget.h)
+        GLWidget.h mesh.cpp mesh.h)
 
 add_executable(${THOR_NAME} ${THOR_SOURCES})
 target_link_libraries(${THOR_NAME} Qt5::Widgets Qt5::Core)
